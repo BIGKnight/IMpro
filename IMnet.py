@@ -1,7 +1,10 @@
 from sklearn import svm
+from sklearn.neural_network import MLPClassifier
+from sklearn import linear_model
 import math
 import heapq
 import random
+import time
 
 
 def logistic_normalization(file_in_path, file_out_path):
@@ -345,7 +348,7 @@ class Net:
                 influence_seed[sigma_index] = 1
                 self.__merge_edge_set(mioa_net, self.mioa[sigma_index])
             else:
-                print ("can't find nodes which can create more influence")
+                print("can't find nodes which can create more influence")
                 return seed_sets
         return seed_sets
 
@@ -490,19 +493,123 @@ def svm_machine(file_train_path, file_test_path, class_table):
     return result
 
 
+def MLP_classifier(file_train_path, file_test_path, class_table):
+    file_in = open(file_test_path, "r")
+    string = file_in.readline()
+    test_sets = []
+    while (string != None) & (string != ""):
+        tmp = string.split()
+        test_sets.append([float(tmp[0]), float(tmp[1])])
+        string = file_in.readline()
+    file_in = open(file_train_path, "r")
+    string = file_in.readline()
+    train = []
+    while (string != None) & (string != ""):
+        tmp = string.split()
+        train.append([float(tmp[0]), float(tmp[1])])
+        string = file_in.readline()
+    clf = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(10, 10, 10), random_state=1) # 三个隐藏层，每层5个节点
+    clf.fit(train, class_table)
+    arr = clf.predict(test_sets)
+    result = []
+    for j in range(len(arr)):
+        if arr[j] == 1:
+            result.append(j)
+    return result
+
+
+def linear_regression(file_train_path, file_test_path, class_table):
+    file_in = open(file_test_path, "r")
+    string = file_in.readline()
+    test_sets = []
+    while (string != None) & (string != ""):
+        tmp = string.split()
+        test_sets.append([float(tmp[0]), float(tmp[1])])
+        string = file_in.readline()
+    file_in = open(file_train_path, "r")
+    string = file_in.readline()
+    train = []
+    while (string != None) & (string != ""):
+        tmp = string.split()
+        train.append([float(tmp[0]), float(tmp[1])])
+        string = file_in.readline()
+    clf = linear_model.LogisticRegressionCV()
+    clf.fit(train, class_table)
+    arr = clf.predict(test_sets)
+    result = []
+    for k in range(len(arr)):
+        if arr[k] == 1:
+            result.append(k)
+    return result
+
+
+def random_k_vertex(k, node_num):
+    seeds = []
+    count = 0
+    while count < k:
+        seed = int(random.random()*node_num)
+        flag = 0
+        for j in range(len(seeds)):
+            if seeds[j] == seed:
+                flag = 1
+                break
+        if flag == 0:
+            seeds.append(seed)
+            count = count + 1
+    return seeds
+
+
 net_test = Net("D:/train/bitcoin-OTC.txt",  "MIA", 6006)
 # net_test = Net("D:/test/btc-alpha.txt", "MIA", 7605)
 # net = Net("D:/WikiTalk.txt", "D:/result.txt", "MIA", 5, 10)
 # net_test.gen_mia_model(0)
 
 net_test.get_miia_mioa("D:/train/miia.txt", "D:/train/mioa.txt")
-# candidate = [i for i in range(net_test.node_num)]
-candidate = [1, 7, 13, 35, 546, 905, 1018, 1386, 1396, 1810, 1953, 2028, 2045, 2067, 2125, 2296, 2388, 2642, 3129, 3988, 4172, 4197, 4291]
-sets = net_test.mia_greedy(5, candidate)
-print(sets)
 
+# start = time.clock()
+# candidate = [i for i in range(net_test.node_num)]
+# sets = net_test.mia_greedy(17, candidate)
+# end = time .clock()
+# print(sets)
+# print(end - start)
+# sum = 0
+# for i in range(100):
+#     sum = sum + net_test.influence(sets)
+# print(sum)
+
+for i in range(9):
+    start = time.clock()
+    candidate = [1, 7, 13, 35, 41, 202, 257, 304, 546, 905, 1018, 1317, 1334, 1352, 1386, 1396, 1565, 1566, 1615, 1810,
+                 1899, 1953, 2028, 2045, 2067, 2125, 2266, 2296, 2388, 2635, 2642, 2942, 3129, 3451, 3649, 3722, 3735,
+                 3828, 3897, 3988, 4172, 4197, 4291, 4559]
+    sets = net_test.mia_greedy(i*2+1, candidate)
+    end = time .clock()
+    print(sets)
+    print(end - start)
+    sum = 0
+    for j in range(100):
+        sum = sum + net_test.influence(sets)
+    print(sum)
+    print()
+
+# start = time.clock()
+# randomsets = random_k_vertex(17, 6006)
+# end = time.clock()
+# print(randomsets)
+# print(end - start)
+# sum = 0
+# for j in range(100):
+#     sum = sum + net_test.influence(randomsets)
+# print(sum)
+
+
+# sets = [1, 8, 3, 13, 7, 4, 15, 177, 6, 5, 129, 2, 16, 10, 12, 11, 46, 9, 58, 33, 14, 38, 18, 30, 79,
+#         22, 57, 798, 23, 61, 95, 25, 7564, 2336, 117, 43, 40, 69, 5342, 19, 26, 68, 17, 51, 7595, 178,
+#         114, 45, 7603, 52, 145, 125, 28, 104, 239, 166, 42, 121, 36, 48, 130, 92, 102, 21, 50, 78, 37,
+#         85, 65, 67, 89, 708, 128, 96, 86, 34, 49, 93, 55, 87, 115, 116, 206, 139, 32, 108, 109, 81, 84,
+#         143, 39, 153, 252, 156, 64, 44, 71, 151, 491, 161]
 # class_tables = [0 for i in range(7605)]
 # for i in range(len(sets)):
 #     class_tables[sets[i]] = 1
-# result = svm_machine("D:/test/min_max_sets.txt", "D:/train/min_max_sets.txt", class_tables)
+# result = linear_regression("D:/test/min_max_sets.txt", "D:/train/min_max_sets.txt", class_tables)
 # print(result)
